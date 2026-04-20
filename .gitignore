@@ -1,0 +1,38 @@
+# Dependencias y archivos binarios
+node_modules/
+vendor/
+build/
+dist/
+coverage/
+
+# Variables de entorno (protegidas en cada carpeta)
+.env
+.env.local
+.env.*
+.env.*.local
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Lockfiles (ajusta según tu configuración)
+package-lock.json
+yarn.lock
+
+# Ignora todo en frontend si está en desarrollo (opcional)
+frontend/node_modules/
+frontend/.env
+frontend/.env.*
+
+# Ignora todo en backend si está en desarrollo (opcional, pero redundante con el .gitignore del backend)
+backend/node_modules/
+backend/.env
+backend/.env.*
+
+# Archivos temporales de editor
+*.swp
+*~
