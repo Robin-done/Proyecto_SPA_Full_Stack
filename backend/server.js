@@ -1,6 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
 import path from "path";
 import database from "./config/database.js";
 import { requestLogger, errorLogger } from "./middleware/logger.js";
@@ -12,8 +16,55 @@ import productRoutes from "./routes/products.js";
 //Variable de Entorno
 dotenv.config();
 
+// Configuración de Swagger
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "SPA API",
+      version: "1.0.0",
+      description: "API para la Single Page Application",
+    },
+    servers: [
+      {
+        url: "http://localhost:5000",
+        description: "Servidor de desarrollo",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  apis: ["./routes/*.js"], // Archivos donde están las rutas
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
 //Crear App Express
 const app = express();
+
+//Seguridad básica
+app.use(helmet());
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Demasiadas solicitudes desde esta IP, por favor intenta más tarde.",
+});
+app.use(limiter);
+
+// Documentación Swagger
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 //Middleware esencial
 app.use(requestLogger);
@@ -51,17 +102,6 @@ app.use((req, res, next) => {
     });
   }
   next();
-});
-
-//Routes Basico
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Servidor funcionando correctamente",
-    timeStamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    database: database.getStatus(),
-  });
 });
 
 //Rutas Principales
