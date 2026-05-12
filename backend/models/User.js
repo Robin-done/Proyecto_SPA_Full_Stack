@@ -58,7 +58,7 @@ userSchema.pre("save", async function () {
 });
 
 //Metodo para comparar Password
-userSchema.method.comparePassword = async function (candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
@@ -69,7 +69,7 @@ userSchema.virtual("fullName").get(function () {
 
 //Metodo estatico para buscar por email
 userSchema.statics.findByEmail = function (email) {
-  return this.findOne({ email: email.toLoweCase() });
+  return this.findOne({ email: email.toLowerCase() });
 };
 
 //Index para mejorar performance en busqueda
