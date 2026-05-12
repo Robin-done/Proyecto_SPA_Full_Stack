@@ -24,15 +24,16 @@ package-lock.json
 yarn.lock
 
 # Ignora todo en frontend si está en desarrollo (opcional)
-frontend/node_modules/
 frontend/.env
 frontend/.env.*
 
-# Ignora todo en backend si está en desarrollo (opcional, pero redundante con el .gitignore del backend)
-backend/node_modules/
-backend/.env
-backend/.env.*
-
+# Editor y configuraciones de IDE
+.vscode/
+.idea/  
+*.txt
+*.docx
+*.md
+*.pdf
 # Archivos temporales de editor
 *.swp
 *~
