@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import {
   register,
   login,
@@ -13,6 +14,20 @@ import {
   authenticateToken,
   optionalAuth,
 } from "../middleware/authMiddleware.js";
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 auth requests per window
+  message:
+    "Demasiadas solicitudes de autenticación desde esta IP, por favor intenta más tarde.",
+});
+
+const activationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 activation attempts per window
+  message:
+    "Demasiados intentos de activación. Espera unos minutos antes de volver a intentar.",
+});
 
 const router = express.Router();
 
@@ -76,7 +91,7 @@ const router = express.Router();
  *               message: El email ya está registrado
  *               error: EMAIL_ALREADY_EXISTS
  */
-router.post("/register", register);
+router.post("/register", authLimiter, register);
 
 /**
  * @swagger
@@ -125,7 +140,7 @@ router.post("/register", register);
  *               message: Credenciales inválidas
  *               error: INVALID_CREDENTIALS
  */
-router.post("/login", login);
+router.post("/login", authLimiter, login);
 
 /**
  * @swagger
@@ -192,7 +207,7 @@ router.get("/verify", optionalAuth, verifyAuth);
  *               message: Email inválido
  *               error: INVALID_EMAIL
  */
-router.post("/resend-activation", resendActivationLink);
+router.post("/resend-activation", authLimiter, resendActivationLink);
 
 /**
  * @swagger
@@ -224,7 +239,7 @@ router.post("/resend-activation", resendActivationLink);
  *               message: Token inválido o expirado
  *               error: INVALID_ACTIVATION_TOKEN
  */
-router.get("/activate/:token", activateAccount);
+router.get("/activate/:token", activationLimiter, activateAccount);
 
 /**
  * @swagger

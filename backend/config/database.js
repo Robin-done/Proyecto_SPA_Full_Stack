@@ -4,6 +4,10 @@ import dotenv from "dotenv";
 //Cargar variables de entorno
 dotenv.config();
 
+// Mongoose security hardening
+mongoose.set("strictQuery", true);
+mongoose.set("sanitizeFilter", true);
+
 class Database {
   constructor() {
     this.connection = null;

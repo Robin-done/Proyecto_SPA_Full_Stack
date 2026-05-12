@@ -6,6 +6,7 @@ import {
   formatProductResponse,
   formatSingleProductResponse,
 } from "../utils/productUtils.js";
+import { pick } from "../utils/payloadUtils.js";
 
 import mongoose from "mongoose";
 
@@ -96,17 +97,34 @@ export const getProductBySku = async (req, res) => {
 //Crear Nuevo Producto (admin)
 export const createProduct = async (req, res) => {
   try {
-    const validation = validateProductData(req.body);
+    const allowedProductFields = [
+      "name",
+      "description",
+      "price",
+      "category",
+      "stock",
+      "sku",
+      "brand",
+      "image",
+      "images",
+      "tags",
+      "features",
+      "specifications",
+      "originalPrice",
+      "discountPercentage",
+    ];
+
+    const productData = pick(req.body, allowedProductFields);
+    const validation = validateProductData(productData);
 
     if (!validation.isValid) {
       return res.status(400).json({
         success: false,
-        message: "Datos del producto inválid",
+        message: "Datos del producto inválidos",
         errors: validation.errors,
       });
     }
 
-    const productData = { ...req.body };
     if (!productData.sku) {
       const baseSku = productData.name
         .toLowerCase()
@@ -145,8 +163,32 @@ export const createProduct = async (req, res) => {
 //Actualizar productos (admin)
 export const updateProduct = async (req, res) => {
   try {
-    const validation = validateProductData(req.body, true);
+    const allowedProductFields = [
+      "name",
+      "description",
+      "price",
+      "category",
+      "stock",
+      "sku",
+      "brand",
+      "image",
+      "images",
+      "tags",
+      "features",
+      "specifications",
+      "originalPrice",
+      "discountPercentage",
+    ];
 
+    const updateFields = pick(req.body, allowedProductFields);
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No se encontró ningún campo válido para actualizar",
+      });
+    }
+
+    const validation = validateProductData(updateFields, true);
     if (!validation.isValid) {
       return res.status(400).json({
         success: false,
@@ -155,11 +197,15 @@ export const updateProduct = async (req, res) => {
       });
     }
 
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-      context: "query",
-    }).lean();
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      updateFields,
+      {
+        new: true,
+        runValidators: true,
+        context: "query",
+      },
+    ).lean();
 
     res.status(200).json({
       success: true,

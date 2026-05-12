@@ -55,7 +55,26 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 const app = express();
 
 //Seguridad básica
-app.use(helmet());
+app.disable("x-powered-by");
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }),
+);
+app.use(helmet.referrerPolicy({ policy: "no-referrer" }));
+app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: "none" }));
+
+if (process.env.NODE_ENV === "production") {
+  app.use(
+    helmet.hsts({
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    }),
+  );
+}
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
@@ -63,8 +82,10 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Documentación Swagger
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Documentación Swagger solo en entornos no-productivos
+if (process.env.NODE_ENV !== "production") {
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 
 //Middleware esencial
 app.use(requestLogger);
@@ -72,9 +93,15 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 //Configurar Cors
+const frontendOrigin = process.env.FRONTEND_URL || "http://localhost:3000";
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || origin === frontendOrigin) {
+        return callback(null, true);
+      }
+      return callback(new Error("CORS: origen no autorizado"), false);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-Requested-With"],

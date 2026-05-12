@@ -5,6 +5,7 @@ import {
   comparePassword,
 } from "../utils/authUtils.js";
 
+import { pick } from "../utils/payloadUtils.js";
 import {
   validateRegistrationData,
   validateLoginData,
@@ -172,37 +173,46 @@ export const getProfile = async (req, res) => {
 //Actalizar perfil de usuario
 export const updateProfile = async (req, res) => {
   try {
-    const { name } = req.body;
-    const update = {};
+    const allowedProfileFields = ["name"];
+    const update = pick(req.body, allowedProfileFields);
 
-    if (name) {
-      const nameError = validateName(name);
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No se encontró ningún campo válido para actualizar",
+      });
+    }
+
+    if (update.name) {
+      const nameError = validateName(update.name);
       if (nameError) {
         return res.status(400).json({
           success: false,
           message: nameError,
         });
       }
-      update.name = name.trim();
-      const user = await User.findByIdAndUpdate(req.user._id, update, {
-        new: true,
-        runValidators: true,
-      });
-      res.status(200).json({
-        success: true,
-        message: "Perfil actualizado exitosamente",
-        data: {
-          user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          },
-        },
-      });
+      update.name = update.name.trim();
     }
+
+    const user = await User.findByIdAndUpdate(req.user._id, update, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Perfil actualizado exitosamente",
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
   } catch (error) {
-    console.error("Error al actualizar el perfil");
+    console.error("Error al actualizar el perfil", error);
     res.status(500).json({
       success: false,
       message: "Error al actualizar el perfil",
